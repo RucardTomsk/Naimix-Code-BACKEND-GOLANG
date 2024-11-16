@@ -1,0 +1,430 @@
+definitions:
+  base.Blame:
+    enum:
+    - User
+    - Postgres
+    - S3
+    - Server
+    - Unknown
+    - Mail
+    type: string
+    x-enum-varnames:
+    - BlameUser
+    - BlamePostgres
+    - BlameS3
+    - BlameServer
+    - BlameUnknown
+    - BlameMail
+  base.ResponseFailure:
+    properties:
+      blame:
+        allOf:
+        - $ref: '#/definitions/base.Blame'
+        example: Guilty System
+      message:
+        example: error occurred
+        type: string
+      status:
+        example: Error
+        type: string
+    type: object
+  base.ResponseOK:
+    properties:
+      status:
+        example: OK
+        type: string
+    type: object
+  base.ResponseOKWithID:
+    properties:
+      ID:
+        example: 12345678-1234-1234-1234-000000000000
+        type: string
+      status:
+        example: OK
+        type: string
+    type: object
+  model.GetUserResponse:
+    properties:
+      status:
+        example: OK
+        type: string
+      user:
+        $ref: '#/definitions/model.UserObject'
+    type: object
+  model.GetUsersResponse:
+    properties:
+      status:
+        example: OK
+        type: string
+      total:
+        type: integer
+      users:
+        items:
+          $ref: '#/definitions/model.UserObject'
+        type: array
+    type: object
+  model.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  model.LoginResponse:
+    properties:
+      refresh_token:
+        type: string
+      status:
+        example: OK
+        type: string
+      token:
+        type: string
+    type: object
+  model.RecreateJWTRequest:
+    properties:
+      refresh_token:
+        type: string
+    type: object
+  model.RegisterRequest:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+    type: object
+  model.UpdateUserAllFieldRequest:
+    properties:
+      email:
+        type: string
+      fio:
+        type: string
+      password:
+        type: string
+    type: object
+  model.UserObject:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      is_admin:
+        type: boolean
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  model.UsersByIdListRequest:
+    properties:
+      ids:
+        items:
+          type: string
+        type: array
+    type: object
+info:
+  contact: {}
+paths:
+  /user/{user-id}/delete:
+    delete:
+      consumes:
+      - application/json
+      description: Delete User
+      parameters:
+      - description: Authorization
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: User ID
+        in: path
+        name: user-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/base.ResponseOK'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/base.ResponseFailure'
+        "500":
+          description: Internal error (server fault)
+          schema:
+            $ref: '#/definitions/base.ResponseFailure'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete User
+      tags:
+      - User
+  /user/field/update:
+    post:
+      consumes:
+      - application/json
+      description: Update User All Fields
+      parameters:
+      - description: Authorization
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: User data
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateUserAllFieldRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/base.ResponseOK'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/base.ResponseFailure'
+        "500":
+          description: Internal error (server fault)
+          schema:
+            $ref: '#/definitions/base.ResponseFailure'
+      security:
+      - ApiKeyAuth: []
+      summary: Update User All Fields
+      tags:
+      - User
+  /user/get:
+    get:
+      consumes:
+      - application/json
+      description: Get all users
+      parameters:
+      - description: Authorization
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.GetUsersResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/base.ResponseFailure'
+        "500":
+          description: Internal error (server fault)
+          schema:
+            $ref: '#/definitions/base.ResponseFailure'
+      security:
+      - ApiKeyAuth: []
+      summary: Get all users
+      tags:
+      - User
+  /user/login:
+    post:
+      consumes:
+      - application/json
+      description: User authorisation
+      parameters:
+      - description: User request
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/model.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.LoginResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/base.ResponseFailure'
+        "500":
+          description: Internal error (server fault)
+          schema:
+            $ref: '#/definitions/base.ResponseFailure'
+      summary: User authorisation
+      tags:
+      - Auth
+  /user/logout:
+    post:
+      consumes:
+      - application/json
+      description: Unauthorized users
+      parameters:
+      - description: Authorization
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: User request
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/model.RecreateJWTRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/base.ResponseOK'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/base.ResponseFailure'
+        "500":
+          description: Internal error (server fault)
+          schema:
+            $ref: '#/definitions/base.ResponseFailure'
+      security:
+      - ApiKeyAuth: []
+      summary: Unauthorized users
+      tags:
+      - Auth
+  /user/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Re-create refresh token
+      parameters:
+      - description: User request
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/model.RecreateJWTRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.LoginResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/base.ResponseFailure'
+        "500":
+          description: Internal error (server fault)
+          schema:
+            $ref: '#/definitions/base.ResponseFailure'
+      summary: Re-create refresh token
+      tags:
+      - Auth
+  /user/register:
+    post:
+      consumes:
+      - application/json
+      description: User registration
+      parameters:
+      - description: User request
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/model.RegisterRequest'
+      - description: Authorization
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/base.ResponseOKWithID'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/base.ResponseFailure'
+        "500":
+          description: Internal error (server fault)
+          schema:
+            $ref: '#/definitions/base.ResponseFailure'
+      security:
+      - ApiKeyAuth: []
+      summary: User registration
+      tags:
+      - Auth
+  /user/retrieve:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve data of an authorised user
+      parameters:
+      - description: Authorization
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.GetUserResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/base.ResponseFailure'
+        "500":
+          description: Internal error (server fault)
+          schema:
+            $ref: '#/definitions/base.ResponseFailure'
+      security:
+      - ApiKeyAuth: []
+      summary: Retrieve data of an authorised user
+      tags:
+      - User
+  /usersByIdList:
+    post:
+      consumes:
+      - application/json
+      description: Retrieve user information by id list
+      parameters:
+      - description: User data
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/model.UsersByIdListRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.GetUsersResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/base.ResponseFailure'
+        "500":
+          description: Internal error (server fault)
+          schema:
+            $ref: '#/definitions/base.ResponseFailure'
+      summary: Retrieve user information by id list
+      tags:
+      - Users
+swagger: "2.0"

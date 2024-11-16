@@ -1,0 +1,96 @@
+name: CD_DEV
+on:
+  push:
+    branches: [main]
+
+  workflow_dispatch:
+
+env:
+  SERVER_HOST: 92.63.64.241
+  SERVER_USER: laborant
+  SERVER_PATH: naimix-backend
+
+jobs:
+  check-build-promitent-api:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.22'
+
+      - name: Mod tidy
+        run: go mod tidy
+
+      - name: Install swag
+        run: go install github.com/swaggo/swag/cmd/swag@latest
+
+      - name: Build service
+        run:  go build -v .
+
+  generate-documentation-promitent-api:
+    needs:
+      - check-build-promitent-api
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.22'
+
+      - name: Install swag
+        run: go install github.com/swaggo/swag/cmd/swag@latest
+
+      - name: Generate documentation
+        run:  swag init --output ./docs/ --parseInternal -d .,internal/domain/base,internal/domain/entity,internal/domain/enum,internal/api
+
+  deploy:
+    needs:
+      - generate-documentation-promitent-api
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.22'
+
+      - name: Install swag
+        run: go install github.com/swaggo/swag/cmd/swag@latest
+
+      - name: Generate documentation promitent-api
+        run: swag init --output ./docs/ --parseInternal -d .,internal/domain/base,internal/domain/entity,internal/domain/enum,internal/api
+
+      - name: Using a trusted host
+        uses: kielabokkie/ssh-key-and-known-hosts-action@v1
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY_DEV }}
+          ssh-host: ${{env.SERVER_HOST}}
+
+      - run: touch .env
+
+      - run: pip install paramiko
+      - run: sudo apt update
+      - run: sudo apt install docker-compose
+
+      - name: Create docker contaxt
+        run: docker context create remote --docker "host=ssh://${{env.SERVER_USER}}@${{env.SERVER_HOST}}"
+
+      - run: docker context use remote
+
+      - run: docker-compose -f ./docker-compose.dev.yml --context remote down
+      - name: Docker image rm
+        run: |
+          docker image rm promitent_backend_v2_promitent-api
+
+      - name: docker-compose run
+        if: always()
+        run: docker-compose -f ./docker-compose.dev.yml --context remote up -d --force-recreate
