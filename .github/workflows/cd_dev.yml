@@ -11,7 +11,7 @@ env:
   SERVER_PATH: naimix-backend
 
 jobs:
-  check-build-promitent-api:
+  check-build-naimix-api:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -31,9 +31,9 @@ jobs:
       - name: Build service
         run:  go build -v .
 
-  generate-documentation-promitent-api:
+  generate-documentation-naimix-api:
     needs:
-      - check-build-promitent-api
+      - check-build-naimix-api
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -52,7 +52,7 @@ jobs:
 
   deploy:
     needs:
-      - generate-documentation-promitent-api
+      - generate-documentation-naimix-api
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -66,7 +66,7 @@ jobs:
       - name: Install swag
         run: go install github.com/swaggo/swag/cmd/swag@latest
 
-      - name: Generate documentation promitent-api
+      - name: Generate documentation naimix-api
         run: swag init --output ./docs/ --parseInternal -d .,internal/domain/base,internal/domain/entity,internal/domain/enum,internal/api
 
       - name: Using a trusted host
@@ -86,11 +86,11 @@ jobs:
 
       - run: docker context use remote
 
-      - run: docker-compose -f ./docker-compose.dev.yml --context remote down
+      - run: docker-compose -f ./docker-compose.yml --context remote down
       - name: Docker image rm
         run: |
           docker image rm promitent_backend_v2_promitent-api
 
       - name: docker-compose run
         if: always()
-        run: docker-compose -f ./docker-compose.dev.yml --context remote up -d --force-recreate
+        run: docker-compose -f ./docker-compose.yml --context remote up -d --force-recreate
