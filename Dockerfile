@@ -19,6 +19,19 @@ RUN GOOS=linux GOARCH=amd64 go build -v -o /build/promitent-api .
 # Stage 2: run binary
 FROM alpine:3.11
 
+
+# Установка зависимостей
+RUN apk add --no-cache --update libpng-dev libjpeg-turbo-dev giflib-dev tiff-dev autoconf automake make gcc g++ wget
+RUN wget https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-0.6.0.tar.gz && \
+    tar -xvzf libwebp-0.6.0.tar.gz && \
+    mv libwebp-0.6.0 libwebp && \
+    rm libwebp-0.6.0.tar.gz && \
+    cd /libwebp && \
+    ./configure && \
+    make && \
+    make install && \
+    rm -rf libwebp \
+
 # Открываем порт 80
 EXPOSE 80
 

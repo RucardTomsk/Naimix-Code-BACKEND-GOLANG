@@ -9,6 +9,8 @@ import (
 	"github.com/RucardTomsk/Naimix-Code-BACKEND-GOLANG/internal/api/dataProcessing"
 	"github.com/RucardTomsk/Naimix-Code-BACKEND-GOLANG/internal/auth"
 	"github.com/RucardTomsk/Naimix-Code-BACKEND-GOLANG/internal/common"
+	"github.com/RucardTomsk/Naimix-Code-BACKEND-GOLANG/internal/helpers"
+	"github.com/RucardTomsk/Naimix-Code-BACKEND-GOLANG/internal/s3"
 	"github.com/RucardTomsk/Naimix-Code-BACKEND-GOLANG/internal/telemetry/log"
 	"github.com/RucardTomsk/Naimix-Code-BACKEND-GOLANG/router"
 	"github.com/RucardTomsk/Naimix-Code-BACKEND-GOLANG/server"
@@ -16,6 +18,8 @@ import (
 	"github.com/RucardTomsk/Naimix-Code-BACKEND-GOLANG/storage/dao"
 	"github.com/RucardTomsk/Naimix-Code-BACKEND-GOLANG/storage/migration"
 	"github.com/google/uuid"
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/spf13/viper"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -112,30 +116,38 @@ func main() {
 
 	//init minio
 	// init minio connection
-	/*
-		var minioService s3.ObjectStoreService
-		if cfg.Minio.UseMocks {
-			logger.Warn("using minio mock instead of real service")
-		} else {
-			minioClient, err := minio.New(cfg.Minio.Endpoint, &minio.Options{
-				Creds:  credentials.NewStaticV4(cfg.Minio.AccessKey, cfg.Minio.SecretKey, cfg.Minio.Token),
-				Secure: cfg.Minio.UseSSL,
-			})
-			if err != nil {
-				logger.Fatal(fmt.Sprintf("failed to init minio client: %v", err))
-			}
-
-			logger.Info(fmt.Sprintf("connected to minio on %s", minioClient.EndpointURL().String()))
-			minioService = s3.NewMinioService(minioClient)
+	var minioService s3.ObjectStoreService
+	if cfg.Minio.UseMocks {
+		logger.Warn("using minio mock instead of real service")
+	} else {
+		minioClient, err := minio.New(cfg.Minio.Endpoint, &minio.Options{
+			Creds:  credentials.NewStaticV4(cfg.Minio.AccessKey, cfg.Minio.SecretKey, cfg.Minio.Token),
+			Secure: cfg.Minio.UseSSL,
+		})
+		if err != nil {
+			logger.Fatal(fmt.Sprintf("failed to init minio client: %v", err))
 		}
-	*/
+
+		logger.Info(fmt.Sprintf("connected to minio on %s", minioClient.EndpointURL().String()))
+		minioService = s3.NewMinioService(minioClient)
+	}
 
 	// init mail service
 	//mailService := mail.NewMailService(cfg.SmtpConfig, logger)
 
+	//init http client
+	cameoMetricsHttpClient, err := helpers.NewHttpClient(common.NewHttpClientConfig(cfg.CameoMetricsHttpClient.URL, cfg.CameoMetricsHttpClient.RateLimiting))
+	if err != nil {
+		logger.Fatal(fmt.Sprintf("failed initialisation httpClient: %v", err))
+	}
+
 	// init storage
 	userStorage := dao.NewUserStorage(db)
 	sessionStorage := dao.NewSessionStorage(db)
+	fileStorage := dao.NewFileStorage(db)
+	companyStorage := dao.NewCompanyStorage(db)
+	vacancyStorage := dao.NewVacancyStorage(db)
+	candidateStorage := dao.NewCandidateStorage(db)
 
 	// init service
 	authService := service.NewAuthService(
@@ -151,11 +163,23 @@ func main() {
 		hasher,
 		uuid.MustParse(cfg.AdminMigration.AdminID))
 
+	candidateService := service.NewCandidateService(
+		logger,
+		vacancyStorage,
+		candidateStorage,
+		cameoMetricsHttpClient)
+
+	vacancyService := service.NewVacancyService(logger, vacancyStorage, companyStorage, candidateService)
+
+	companyService := service.NewCompanyService(logger, companyStorage, userService, vacancyService, fileStorage, minioService)
 	// init controller
 	controllers := controller.NewControllerContainer(
 		logger,
 		authService,
 		userService,
+		companyService,
+		vacancyService,
+		candidateService,
 	)
 
 	newDataProcessing := dataProcessing.NewDataProcessing("created_at", "ASC", 10)

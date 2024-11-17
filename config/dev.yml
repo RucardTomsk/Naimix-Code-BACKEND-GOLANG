@@ -13,7 +13,7 @@ server:
 auth:
   salt: "ahbbraegr345a"
   signingKey: "tqtqbsabsdf4"
-  timeToLive: 15m
+  timeToLive: 1024m
 
 adminMigration:
   adminID: "94a123a8-711d-11ee-a2d8-0251c0a8f004"
@@ -31,10 +31,13 @@ mail:
   mail: "www.carat@list.ru"
 
 minio:
-  endpoint: "minio.promitent.ru"
-  accessKey: "J3J4Th6dqq4OtcoCBwqR"
-  secretKey: "G9kPanhVWTNPahmAQu2AGJh15hOFbbZl0PnvZie1"
+  endpoint: "minio.freydin.space"
+  accessKey: "5AXO7Y9mZj0QywAN"
+  secretKey: "fLlNJ18GmXT8bIe3AXxZVeMGNllGR99Y"
   token: ""
   useSSL: true
+
+cameoMetricsHttpClient:
+  url: https://metrics.naimix.cameo.freydin.space
 
 

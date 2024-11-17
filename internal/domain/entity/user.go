@@ -11,10 +11,12 @@ import (
 type User struct {
 	base.EntityWithIdKey
 
-	Name     string    `json:"name"`
-	Email    string    `json:"email" gorm:"uniqueIndex"`
-	Password string    `json:"password"`
-	Sessions []Session `json:"sessions,omitempty"`
+	Name      string     `json:"name"`
+	Email     string     `json:"email" gorm:"uniqueIndex"`
+	Password  string     `json:"password"`
+	Company   *Company   `json:"company"`
+	CompanyID *uuid.UUID `json:"companyID"`
+	Sessions  []Session  `json:"sessions,omitempty"`
 }
 
 func (User) FilteringRules() map[string]map[string]enum.ValidateType {

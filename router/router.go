@@ -44,6 +44,28 @@ func (h *Router) InitRoutes(
 
 	baseRouter := router.Group("/api")
 
+	candidate := baseRouter.Group("/candidate")
+	{
+		candidate.POST("vacancy/:vacancy-id", controllerContainer.CandidateController.CreateCandidate)
+		candidate.GET(":candidate-id", controllerContainer.CandidateController.RetrieveCandidate)
+		candidate.GET("", dataProcessing.ApplyMiddleware(*logger, entity.Candidate{}.FilteringRules(), nil), controllerContainer.CandidateController.GetCandidates)
+	}
+
+	vacancy := baseRouter.Group("/vacancy")
+	{
+		vacancy.POST("company/:company-id", controllerContainer.VacancyController.CreateVacancy)
+		vacancy.GET(":vacancy-id", controllerContainer.VacancyController.RetrieveVacancy)
+		vacancy.GET("", dataProcessing.ApplyMiddleware(*logger, entity.Vacancy{}.FilteringRules(), nil), controllerContainer.VacancyController.GetVacancy)
+	}
+
+	company := baseRouter.Group("/company")
+	{
+		company.POST("", middleware.SetAuthorizationCheck(JWTManager, *logger), controllerContainer.CompanyController.CreateCompany)
+		company.POST(":company-id/logo", middleware.SetAuthorizationCheck(JWTManager, *logger), controllerContainer.CompanyController.UploadLogo)
+		company.GET(":company-id", controllerContainer.CompanyController.RetrieveCompany)
+		company.GET("", dataProcessing.ApplyMiddleware(*logger, entity.Company{}.FilteringRules(), nil), controllerContainer.CompanyController.GetCompany)
+	}
+
 	user := baseRouter.Group("user")
 	{
 		user.POST("register",

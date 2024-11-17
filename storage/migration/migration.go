@@ -19,6 +19,9 @@ func Migrate(
 	if err := db.AutoMigrate(
 		&entity.Session{},
 		&entity.User{},
+		&entity.Company{},
+		&entity.Vacancy{},
+		&entity.Candidate{},
 	); err != nil {
 		//relationship doesn't exist
 		if !strings.Contains(err.Error(), "42P07") {
