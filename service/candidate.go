@@ -31,10 +31,10 @@ func NewCandidateService(logger *zap.Logger, vacancyStorage *dao.VacancyStorage,
 	}
 }
 
-func (s *CandidateService) AddNewCandidate(vacancyId uuid.UUID, request *model.AddNewCandidateRequest, ctx context.Context) *base.ServiceError {
+func (s *CandidateService) AddNewCandidate(vacancyId uuid.UUID, request *model.AddNewCandidateRequest, ctx context.Context) (*uuid.UUID, *base.ServiceError) {
 	vacancy, err := s.vacancyStorage.Retrieve(vacancyId, ctx)
 	if err != nil {
-		return base.NewPostgresReadError(err)
+		return nil, base.NewPostgresReadError(err)
 	}
 
 	type responseModel struct {
@@ -56,7 +56,7 @@ func (s *CandidateService) AddNewCandidate(vacancyId uuid.UUID, request *model.A
 	})
 
 	if err != nil {
-		return base.NewJsonMarshalError(err)
+		return nil, base.NewJsonMarshalError(err)
 	}
 
 	oRequest, serviceErr := s.cameoMetricsHttpClient.HttpRequest(
@@ -67,7 +67,7 @@ func (s *CandidateService) AddNewCandidate(vacancyId uuid.UUID, request *model.A
 	)
 
 	if serviceErr != nil {
-		return &base.ServiceError{
+		return nil, &base.ServiceError{
 			Message: "failure create user",
 			Blame:   base.BlameServer,
 			Code:    serviceErr.Code,
@@ -76,7 +76,7 @@ func (s *CandidateService) AddNewCandidate(vacancyId uuid.UUID, request *model.A
 	}
 
 	if err := json.Unmarshal(oRequest, &r); err != nil {
-		return base.NewJsonUnmarshalError(err)
+		return nil, base.NewJsonUnmarshalError(err)
 	}
 
 	newCandidate := &entity.Candidate{
@@ -88,10 +88,10 @@ func (s *CandidateService) AddNewCandidate(vacancyId uuid.UUID, request *model.A
 	}
 
 	if err := s.candidateStorage.Create(newCandidate, ctx); err != nil {
-		return base.NewPostgresWriteError(err)
+		return nil, base.NewPostgresWriteError(err)
 	}
 
-	return nil
+	return &newCandidate.ID, nil
 }
 
 func (s *CandidateService) RetrieveCandidate(candidateID uuid.UUID, ctx context.Context) (*model.CandidateObject, *base.ServiceError) {

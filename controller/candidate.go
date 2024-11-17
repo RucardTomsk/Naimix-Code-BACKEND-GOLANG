@@ -55,12 +55,14 @@ func (a *CandidateController) CreateCandidate(c *gin.Context) {
 		return
 	}
 
-	if serviceErr := a.candidateService.AddNewCandidate(vacancyId, &payload, c); serviceErr != nil {
+	id, serviceErr := a.candidateService.AddNewCandidate(vacancyId, &payload, c)
+	if serviceErr != nil {
 		c.JSON(http.StatusBadRequest, serviceErr)
 		return
 	}
 
-	c.JSON(http.StatusOK, base.ResponseOK{
+	c.JSON(http.StatusOK, base.ResponseOKWithID{
+		ID:     *id,
 		Status: http.StatusText(http.StatusOK),
 	})
 }
