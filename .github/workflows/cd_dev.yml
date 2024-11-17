@@ -89,7 +89,7 @@ jobs:
       - run: docker-compose -f ./docker-compose.yml --context remote down
       - name: Docker image rm
         run: |
-          docker image rm promitent_backend_v2_promitent-api
+          docker image rm naimix-code-backend-golang_promitent-api
 
       - name: docker-compose run
         if: always()
