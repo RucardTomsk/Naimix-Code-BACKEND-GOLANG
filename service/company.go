@@ -149,16 +149,29 @@ func (s *CompanyService) RetrieveCompany(companyID uuid.UUID, ctx context.Contex
 		vacances = append(vacances, *vm)
 	}
 
-	return &model.CompanyObject{
-		ID:          company.ID,
-		CreatedAt:   company.CreatedAt,
-		UpdatedAt:   company.UpdatedAt,
-		Name:        company.Name,
-		Description: company.Description,
-		LogoURL:     *logoURL,
-		Users:       users,
-		Vacancies:   vacances,
-	}, nil
+	if logoURL != nil {
+		return &model.CompanyObject{
+			ID:          company.ID,
+			CreatedAt:   company.CreatedAt,
+			UpdatedAt:   company.UpdatedAt,
+			Name:        company.Name,
+			Description: company.Description,
+			LogoURL:     *logoURL,
+			Users:       users,
+			Vacancies:   vacances,
+		}, nil
+	} else {
+		return &model.CompanyObject{
+			ID:          company.ID,
+			CreatedAt:   company.CreatedAt,
+			UpdatedAt:   company.UpdatedAt,
+			Name:        company.Name,
+			Description: company.Description,
+			LogoURL:     "",
+			Users:       users,
+			Vacancies:   vacances,
+		}, nil
+	}
 }
 
 func (s *CompanyService) GetCompany(options *dataProcessing.Options, ctx context.Context) ([]model.CompanyObject, *base.ServiceError) {

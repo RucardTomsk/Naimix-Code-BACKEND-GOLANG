@@ -66,7 +66,8 @@ func (s *MinioService) UploadAsWebP(ctx context.Context, bucket enum.Bucket, fil
 
 	err = webpbin.NewCWebP(
 		webpbin.SetSkipDownload(true),
-		webpbin.SetVendorPath("")).
+		webpbin.SetVendorPath(""),
+	).
 		Quality(80).
 		InputImage(img).
 		Output(&webpBuffer).
